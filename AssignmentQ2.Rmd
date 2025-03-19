@@ -6,7 +6,7 @@ date: "2025-03-10"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#load in stuff
+# Load required packages and dataset
 library(faraway)
 data(butterfat)
 library(ggplot2)
@@ -16,7 +16,7 @@ library(effectsize)
 theme_set(theme_minimal())
 ```
 
-#Initial Visualisations
+# Initial Visualisations
 ```{r}
 head(butterfat)
 
@@ -45,9 +45,9 @@ ggplot(butterfat_summary, aes(x = Age, y = mean_bf, color = Breed, group = Breed
        x = "Age Group", y = "Mean Butterfat (%)", color = "Breed")
 ```
 
-#Two-way ANOVA
+# Two-way ANOVA
 ```{r}
-#Two-Way ANOVA
+# Two-Way ANOVA
 model <- aov(Butterfat ~ Breed * Age, data = butterfat)
 print(anova(model))
 
@@ -56,7 +56,7 @@ par(mfrow = c(2, 2))
 plot(model)
 
 ```
-#Best breed vs Second best
+# Best breed vs Second best
 ```{r}
 # Calculate overall breed means ignoring age
 breed_means <- butterfat %>%
