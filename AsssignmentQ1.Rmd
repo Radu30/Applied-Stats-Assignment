@@ -6,7 +6,7 @@ date: "2025-03-07"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#Load
+#Load package for plotting
 library(ggplot2)
 theme_set(theme_minimal())
 ```
