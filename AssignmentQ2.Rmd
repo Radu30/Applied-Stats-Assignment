@@ -1,0 +1,85 @@
+---
+title: "AssignmentQ2"
+output: html_document
+date: "2025-03-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#load in stuff
+library(faraway)
+data(butterfat)
+library(ggplot2)
+library(dplyr)
+library(MASS)
+library(effectsize)
+theme_set(theme_minimal())
+```
+
+#Initial Visualisations
+```{r}
+head(butterfat)
+
+# Boxplot by breed and age
+ggplot(butterfat, aes(x = Breed, y = Butterfat, fill = Age)) +
+  geom_boxplot() +
+  labs(title = "Butterfat Content by Breed and Age", x = "Breed", y = "Butterfat (%)")
+
+# Compute summary statistics for interaction plots
+butterfat_summary <- butterfat %>%
+  group_by(Breed, Age) %>%
+  summarise(mean_bf = mean(Butterfat), .groups = 'drop')
+
+# Interaction plot 1
+ggplot(butterfat_summary, aes(x = Breed, y = mean_bf, color = Age, group = Age)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Interaction Plot: Breed and Age", x = "Breed", y = "Mean Butterfat (%)")
+
+# Interaction plot 2
+ggplot(butterfat_summary, aes(x = Age, y = mean_bf, color = Breed, group = Breed)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(title = "Interaction Plot of Breed and Age Effects",
+       x = "Age Group", y = "Mean Butterfat (%)", color = "Breed")
+```
+
+#Two-way ANOVA
+```{r}
+#Two-Way ANOVA
+model <- aov(Butterfat ~ Breed * Age, data = butterfat)
+print(anova(model))
+
+# Check Residuals
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+#Best breed vs Second best
+```{r}
+# Calculate overall breed means ignoring age
+breed_means <- butterfat %>%
+  group_by(Breed) %>%
+  summarise(
+    Mean_Butterfat = mean(Butterfat, na.rm = TRUE),
+  ) %>%
+  arrange(desc(Mean_Butterfat))  # Sort from highest to lowest
+
+print(breed_means)
+
+# Perform pairwise comparisona between all breeds
+pairwise_tests <- pairwise.t.test(
+  butterfat$Butterfat, 
+  butterfat$Breed
+)
+
+print(pairwise_tests)
+
+# Filter data for Jersey and Guernsey as highest
+jersey<- butterfat %>% filter(Breed == "Jersey") %>% pull(Butterfat)
+guernsey<- butterfat %>% filter(Breed == "Guernsey") %>% pull(Butterfat)
+
+# Compute Cohen's d for effect size
+cohens_d(jersey, guernsey)
+```
