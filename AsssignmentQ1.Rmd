@@ -16,7 +16,7 @@ theme_set(theme_minimal())
 elections <-read.table("C:/Users/radu1/OneDrive/Desktop/Year 4 - Sem2/Applied Stats/Assignment/BushGore.dat", header = TRUE)
 ```
 
-#Initial Visualisation
+# Initial Visualisation
 ```{r}
 # Scatterplot comparing Buchanan and Perot votes
 plot(elections$Perot, elections$Buchanan,
@@ -31,7 +31,7 @@ text(palm_beach$Perot, palm_beach$Buchanan, "PalmBeach", pos = 4, col = "red")
 ```
 
 
-#Initial linear model
+# Initial linear model
 ```{r}
 # Fit linear regression model for predicting Buchanan votes using Perot
 model <- lm(Buchanan ~ Perot, data = elections)
@@ -54,7 +54,7 @@ points(50, cooksd[50], col = "red", pch = 19)
 text(50, cooksd[50], "Palm Beach", pos = 4, col = "red", cex = 0.8) 
 ```
 
-#Alternative linear model removing Palm Beach
+# Alternative linear model removing Palm Beach
 ```{r}
 # Fit second model as before, now excluding Palm Beach
 model_reduced <- lm(Buchanan ~ Perot, data = elections, subset = (County != "PalmBeach"))
@@ -68,7 +68,7 @@ plot(model_reduced)
 
 ```
 
-#Comparing models
+# Comparing models
 ```{r}
 # Plot the two regression lines with confidence intervals
 plot(elections$Perot, elections$Buchanan,
