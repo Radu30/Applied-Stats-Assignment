@@ -1,0 +1,57 @@
+---
+title: "AssignmentQ4"
+output: html_document
+date: "2025-03-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#load in stuff
+
+library(ggplot2)
+library(dplyr)
+teachingratings <- load("TeachingRatings.Rdata")
+theme_set(theme_minimal())
+```
+
+
+```{r}
+#structure and summary of the data
+str(TeachingRatings)
+
+summary(TeachingRatings)
+
+#Initial Plots to find links
+
+#Beauty x sex
+ggplot(TeachingRatings, aes(x = beauty, y = eval, color = sex)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Effect of Beauty on Evaluation by Sex")
+
+
+#Beauty x Tenure
+ggplot(TeachingRatings, aes(x = beauty, y = eval, color = tenure)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Effect of Beauty on Evaluation by Tenure")
+
+```
+
+```{r}
+# Defining predictors
+predictors <- c("beauty", "age", "minority", "native", "division", "sex", "tenure")
+
+# Generate all possible two-way interactions
+interactions <- combn(predictors, 2, FUN = function(x) paste(x, collapse = ":"))
+
+# Model with all main effects and interactions
+full_model <- lm(
+  eval ~ .^2,
+  data = TeachingRatings[, c("eval", predictors)]
+)
+
+# stepwise selection to reduce the model
+final_model <- step(full_model, direction = "both", trace = FALSE)
+summary(final_model)
+```
