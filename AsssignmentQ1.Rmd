@@ -1,96 +1,74 @@
 ---
-title: "Assignment"
+title: "Assignment Q1"
 output: html_document
 date: "2025-03-07"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#load in stuff
+#Load
 library(ggplot2)
 theme_set(theme_minimal())
 ```
 
 ```{r loading-data, include = FALSE}
+# Load in Data
 elections <-read.table("C:/Users/radu1/OneDrive/Desktop/Year 4 - Sem2/Applied Stats/Assignment/BushGore.dat", header = TRUE)
 ```
 
-#Visualisation
+#Initial Visualisation
 ```{r}
-#Scatterplot of Buchanan (2000) vs Perot (1996) votes
+# Scatterplot comparing Buchanan and Perot votes
 plot(elections$Perot, elections$Buchanan,
      xlab = "Perot 1996 Votes", ylab = "Buchanan 2000 Votes",
      main = "Buchanan vs Perot Votes by County",
      pch = 20, col = "black")
 
-# Highlight Palm Beach County
+# Highlight Palm Beach County - point of interest
 palm_beach <- subset(elections, County == "PalmBeach")
 points(palm_beach$Perot, palm_beach$Buchanan, col = "red", pch = 19)
 text(palm_beach$Perot, palm_beach$Buchanan, "PalmBeach", pos = 4, col = "red")
-
-
 ```
 
 
 #Initial linear model
 ```{r}
-# Fit linear regression model
+# Fit linear regression model for predicting Buchanan votes using Perot
 model <- lm(Buchanan ~ Perot, data = elections)
 summary(model)
 confint(model)
 
-# Diagnostic plots to check model assumptions
+# Diagnostic plots to check regression assumptions
 par(mfrow = c(2, 2))
 plot(model)
 
 
-# Check for influential observations using Cook's distance
+# Extra check for influential observations using Cook's distance
 cooksd <- cooks.distance(model)
 par(mfrow = c(1, 1))
 plot(cooksd, pch = 19, main = "Cook's Distance")
 abline(h = 4 / (nrow(elections) - 2), col = "red")  # Threshold line
 
 # Highlight and label Palm Beach (index 50)
-points(50, cooksd[50], col = "red", pch = 19)  # Add red point
-text(50, cooksd[50], "Palm Beach", pos = 4, col = "red", cex = 0.8)  # Add label
+points(50, cooksd[50], col = "red", pch = 19)
+text(50, cooksd[50], "Palm Beach", pos = 4, col = "red", cex = 0.8) 
 ```
 
 #Alternative linear model removing Palm Beach
 ```{r}
-# Compare models with and without Palm Beach
+# Fit second model as before, now excluding Palm Beach
 model_reduced <- lm(Buchanan ~ Perot, data = elections, subset = (County != "PalmBeach"))
+
 summary(model_reduced)
 confint(model_reduced)
 
+# Check Resiudals
 par(mfrow = c(2, 2))
 plot(model_reduced)
-
-summary(model_reduced)
-confint(model_reduced)
 
 ```
 
 #Comparing models
-```{r}
-
-# Plot the two regression lines for visual comparison
-plot(elections$Perot, elections$Buchanan,
-     xlab = "Votes for Ross Perot (1996)",
-     ylab = "Votes for Pat Buchanan (2000)",
-     main = "Regression with and without Palm Beach County",
-     pch = 19, col = "black")
-abline(model, col = "turquoise", lwd = 2) # regression with all counties
-abline(model_reduced, col = "purple", lwd = 2, lty = 2) # regression without Palm Beach
-points(palm_beach$Perot, palm_beach$Buchanan, col = "red", pch = 19)
-text(palm_beach$Perot, palm_beach$Buchanan, "PalmBeach", pos = 4, col = "red")
-
-#Legend for the two lines
-legend("topleft", legend = c("All Counties", "Excluding Palm Beach"),
-       col = c("turquoise", "purple"), lty = c(1, 2), lwd = 2)
-#AIC
-AIC(model_reduced)
-```
-
 ```{r}
 # Plot the two regression lines with confidence intervals
 plot(elections$Perot, elections$Buchanan,
@@ -99,16 +77,16 @@ plot(elections$Perot, elections$Buchanan,
      main = "Regression with and without Palm Beach County",
      pch = 19, col = "black")
 
-# Generate sequence for predictions
-perot_seq <- data.frame(Perot = seq(min(elections$Perot), 
-                                   max(elections$Perot), 
+# Create prediction data
+perot_seq <- data.frame(Perot = seq(min(elections$Perot),
+                                    max(elections$Perot), 
                                    length.out = 100))
 
-# Get predictions with confidence intervals for both models
+# Get predictions and confidence intervals for both models
 pred_full <- predict(model, newdata = perot_seq, interval = "confidence")
 pred_reduced <- predict(model_reduced, newdata = perot_seq, interval = "confidence")
 
-# Plot confidence bands
+# Add confidence bands
 polygon(c(perot_seq$Perot, rev(perot_seq$Perot)), 
         c(pred_full[, "lwr"], rev(pred_full[, "upr"])),
         col = adjustcolor("turquoise", alpha.f = 0.2), border = NA)
@@ -125,14 +103,11 @@ abline(model_reduced, col = "purple", lwd = 2, lty = 2)
 points(palm_beach$Perot, palm_beach$Buchanan, col = "red", pch = 19)
 text(palm_beach$Perot, palm_beach$Buchanan, "PalmBeach", pos = 4, col = "red")
 
-# Legend
+# Add legend
 legend("topleft", 
        legend = c("All Counties (95% CI)", "Excluding Palm Beach (95% CI)"),
        col = c("turquoise", "purple"), 
        lty = c(1, 2), 
        lwd = 2,
        inset = 0.02)
-
-
-
 ```
