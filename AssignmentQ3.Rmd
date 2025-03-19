@@ -1,0 +1,173 @@
+---
+title: "Assignment Q3"
+output: html_document
+date: "2025-03-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#load required packages and dataset
+library(gamair)
+data(cairo)
+library(ggplot2)
+library(dplyr)
+theme_set(theme_minimal())
+```
+
+
+#Formulating model with 5 harmonic terms
+```{r}
+head(cairo)
+
+# Define harmonic terms up to i=5
+harmonics_5 <- 1:5
+
+# Create sine/cosine terms for each i
+sin_cos_terms <- unlist(lapply(harmonics_5, function(i) {
+  c(paste0("I(sin(2 * pi * ", i, " * time / 365.25))"),
+    paste0("I(cos(2 * pi * ", i, " * time / 365.25))"))
+}))
+
+# Formula
+formula_str <- paste0("temp ~ time + ", paste(sin_cos_terms, collapse = " + "))
+
+# Fit model
+model_5 <- lm(as.formula(formula_str), data = cairo)
+
+# Generate predictions for visualisation
+cairo$predicted <- predict(model_5)
+
+# Plot actual vs predicted temperatures
+cairo$date <- as.Date("1995-01-01") + cairo$time - 1
+ggplot(cairo, aes(x = date)) +
+  geom_point(aes(y = temp), color = "rosybrown4", alpha = 0.3, size = 1)+
+  geom_line(aes(y = predicted), color = "black", linewidth = 0.5)+
+  labs(title = "Cairo Daily Temperatures",
+       x = "Year",
+       y = "Temperature (°F)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Check model assumptions
+par(mfrow = c(2, 2))
+plot(model_5)
+```
+
+
+#Comparing 5 terms to 4 terms
+```{r}
+# Build 4-term model
+harmonics_4 <- 1:4
+sin_cos_terms_4 <- unlist(lapply(harmonics_4, function(i) {
+  c(paste0("I(sin(2 * pi * ", i, " * time / 365.25))"),
+    paste0("I(cos(2 * pi * ", i, " * time / 365.25))"))
+}))
+
+# Create 4-harmonic model formula
+formula_str_4 <- paste0("temp ~ time + ", paste(sin_cos_terms_4, collapse = " + "))
+model_4 <- lm(as.formula(formula_str_4), data = cairo)
+
+# Compare 5 terms to 4 terms using ANOVA
+anova_54 <- anova(model_4, model_5)
+anova_54
+```
+
+#Comparing 4 terms to 3 terms
+```{r}
+# Build 3-term model
+harmonics_3 <- 1:3
+sin_cos_terms_3 <- unlist(lapply(harmonics_3, function(i) {
+  c(paste0("I(sin(2 * pi * ", i, " * time / 365.25))"),
+    paste0("I(cos(2 * pi * ", i, " * time / 365.25))"))
+}))
+
+# Create 3-harmonic model formula
+formula_str_3 <- paste0("temp ~ time + ", paste(sin_cos_terms_3, collapse = " + "))
+model_3 <- lm(as.formula(formula_str_3), data = cairo)
+
+# Compare 4 terms to 3 terms using ANOVA
+anova_43 <- anova(model_3, model_4)
+anova_43
+```
+
+#Comparing 3 terms to 2 terms
+```{r}
+# Build 2-term model
+harmonics_2 <- 1:2
+sin_cos_terms_2 <- unlist(lapply(harmonics_2, function(i) {
+  c(paste0("I(sin(2 * pi * ", i, " * time / 365.25))"),
+    paste0("I(cos(2 * pi * ", i, " * time / 365.25))"))
+}))
+
+# Create 2-harmonic model formula
+formula_str_2 <- paste0("temp ~ time + ", paste(sin_cos_terms_2, collapse = " + "))
+model_2 <- lm(as.formula(formula_str_2), data = cairo)
+
+# Compare 3 terms to 2 terms using ANOVA
+anova_32 <- anova(model_2, model_3)
+anova_32
+
+# Check model assumptions
+par(mfrow = c(2, 2))
+plot(model_3)
+```
+
+#Is there evidence for change in overall mean temp over the years
+```{r}
+summary(model_3)
+
+# Extract values for analysis
+time_coef <- coef(summary(model_3))["time", ]
+p_value <- time_coef["Pr(>|t|)"]
+estimate <- time_coef["Estimate"]
+
+# Convert daily trend to annual
+annual_trend <- estimate * 365.25
+
+# Results
+p_value
+estimate
+annual_trend
+
+```
+
+
+# Making residual plots (part d)
+```{r}
+# Setting plots side by side
+par(mfrow = c(1, 2))
+
+# (i) Residuals vs Time plot
+plot(cairo$time, residuals(model_3),
+     main = "Residuals vs Time",
+     xlab = "Time (days since 1995-01-01)",
+     ylab = "Residuals (°F)",
+     col = "navy")
+abline(h = 0, col = "red", lty = 2) # Reference line
+
+# (ii) Residuals vs Lagged Residuals plot
+n <- length(residuals(model_3))
+lagged_residuals <- c(NA, residuals(model_3)[-n])  # Lag by 1 observation
+
+plot(lagged_residuals, residuals(model_3),
+     main = "Residuals vs Lagged Residuals",
+     xlab = "Previous Residual (°F)",
+     ylab = "Current Residual (°F)",
+     col = "darkgoldenrod")
+abline(h = 0, v = 0, col = "black", lty = 2)
+abline(a = 0, b = 1, col = "red", lty = 2)  # Reference line
+```
+
+# Quantifying our findings (part e)
+```{r}
+# Create lagged residuals (drop first NA observation)
+residual_data <- data.frame(
+  current = residuals(model_3)[-1],  # Remove first residual (no lag)
+  lagged = residuals(model_3)[-length(residuals(model_3))]  # Lagged residuals
+)
+
+# Fit model
+ar_model <- lm(current ~ lagged - 1, data = residual_data)
+
+# Model summary
+summary(ar_model)
+```
