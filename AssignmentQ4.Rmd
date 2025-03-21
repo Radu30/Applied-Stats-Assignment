@@ -1,5 +1,5 @@
 ---
-title: "AssignmentQ4"
+title: "Assignment Q4"
 output: html_document
 date: "2025-03-15"
 ---
@@ -7,51 +7,90 @@ date: "2025-03-15"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #load in stuff
-
 library(ggplot2)
 library(dplyr)
+library(car)
+library(tidyr)
 teachingratings <- load("TeachingRatings.Rdata")
 theme_set(theme_minimal())
 ```
 
 
+# Exploring Data
 ```{r}
-#structure and summary of the data
+# Structure and summary of data
 str(TeachingRatings)
-
 summary(TeachingRatings)
 
-#Initial Plots to find links
+# Distribution of course evaluation scores
+ggplot(TeachingRatings, aes(x = eval)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Course Evaluation Scores", x = "Evaluation Score", y = "Frequency")
 
-#Beauty x sex
-ggplot(TeachingRatings, aes(x = beauty, y = eval, color = sex)) +
+# Distribution of beauty scores (mean-centered)
+ggplot(TeachingRatings, aes(x = beauty)) +
+  geom_density(fill = "salmon", alpha = 0.6) +
+  labs(title = "Distribution of Beauty Scores (Mean-Centered)", x = "Beauty Score")
+
+# Relationship between eval and beauty
+ggplot(TeachingRatings, aes(x = beauty, y = eval)) +
   geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Effect of Beauty on Evaluation by Sex")
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Evaluation Score vs. Beauty Score", x = "Beauty Score", y = "Evaluation Score")
 
+# Age distribution and relationship with eval
+ggplot(TeachingRatings, aes(x = age)) +
+  geom_histogram(binwidth = 5, fill = "lightgreen", color = "black") +
+  labs(title = "Distribution of Instructor Age", x = "Age", y = "Frequency")
 
-#Beauty x Tenure
-ggplot(TeachingRatings, aes(x = beauty, y = eval, color = tenure)) +
+ggplot(TeachingRatings, aes(x = age, y = eval)) +
   geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Effect of Beauty on Evaluation by Tenure")
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Evaluation Score vs. Age", x = "Age", y = "Evaluation Score")
 
+# Reshape data for faceting (convert categorical variables to long format)
+teaching_long <- TeachingRatings %>%
+  pivot_longer(
+    cols = c(minority, native, division, sex, tenure),
+    names_to = "variable",
+    values_to = "level"
+  )
+
+# Create combined boxplot with facets
+ggplot(teaching_long, aes(x = level, y = eval, fill = variable)) +
+  geom_boxplot() +
+  facet_wrap(~ variable, scales = "free_x", ncol = 3) +
+  scale_fill_manual(values = c("minority" = "orange",
+                              "native" = "purple",
+                              "division" = "cyan",
+                              "sex" = "pink",
+                              "tenure" = "lightblue")) +
+  labs(title = "Evaluation Scores by Categorical Variables",
+       x = "Category Level",
+       y = "Evaluation Score") +
+  theme(legend.position = "none",
+        strip.text = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-
+# Model formulation
 ```{r}
-# Defining predictors
-predictors <- c("beauty", "age", "minority", "native", "division", "sex", "tenure")
 
-# Generate all possible two-way interactions
-interactions <- combn(predictors, 2, FUN = function(x) paste(x, collapse = ":"))
+# Full model with interactions
+full_model <- lm(eval ~ beauty*age + beauty*sex + tenure + minority + native + division, 
+                 data = TeachingRatings)
 
-# Model with all main effects and interactions
-full_model <- lm(
-  eval ~ .^2,
-  data = TeachingRatings[, c("eval", predictors)]
-)
 
-# stepwise selection to reduce the model
-final_model <- step(full_model, direction = "both", trace = FALSE)
+# Check Residuals
+par(mfrow = c(2, 2))
+plot(full_model)
+
+# Stepwise model selection (both directions)
+final_model <- step(full_model, direction = "both")
+
+# Print final model summary
 summary(final_model)
+
+# Check Residuals
+par(mfrow = c(2, 2))
+plot(final_model)
 ```
